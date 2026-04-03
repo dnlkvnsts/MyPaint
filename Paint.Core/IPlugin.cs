@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Paint.Core
 {
-    internal interface IPlugin
+    public interface IPlugin
     {
+        string Name { get; }
+        IShape CreateInstance();
     }
 }

@@ -5,8 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Paint.App"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button Content="Нажми" Height="20" Width="60" Click="Button_Click" />
-    </Grid>
+        Title="MainWindow" Height="450" Width="800"
+        Loaded="Window_Loaded">
+    <DockPanel>
+       
+        <StackPanel x:Name="PluginsPanel" 
+                    DockPanel.Dock="Top" 
+                    Orientation="Horizontal" 
+                    Background="#EEE" 
+                    Height="50">
+            <TextBlock Text="Инструменты:" VerticalAlignment="Center" Margin="10,0"/>
+        </StackPanel>
+
+        
+        <Canvas x:Name="MainCanvas" 
+                Background="White"
+                MouseDown="MainCanvas_MouseDown" 
+                MouseMove="MainCanvas_MouseMove" 
+                MouseUp="MainCanvas_MouseUp" />
+    </DockPanel>
 </Window>
