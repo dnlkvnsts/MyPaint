@@ -21,24 +21,47 @@ namespace PolygonPlugin
         public bool IsSelected { get; set; } = false;
         public int OrderIndex { get; set; } = 0;
 
+        public int SideCount { get; set; } = 5;
+
 
 
         public void Draw(Canvas canvas)
         {
             if (Points.Count < 2) return;
 
+            Point center = Points[0];
+            Point edge = Points[1];
+
+            double radius = Math.Sqrt(Math.Pow(edge.X - center.X, 2) + Math.Pow(edge.Y - center.Y, 2));
+
+           
+            double startAngle = Math.Atan2(edge.Y - center.Y, edge.X - center.X);
+
+            PointCollection polygonPoints = new PointCollection();
+
+            for (int i = 0; i < SideCount; i++)
+            {
+               
+                double angle = startAngle + (i * 2.0 * Math.PI / SideCount);
+                double x = center.X + Math.Cos(angle) * radius;
+                double y = center.Y + Math.Sin(angle) * radius;
+                polygonPoints.Add(new Point(x, y));
+            }
 
             Polygon polygon = new Polygon
             {
                 Stroke = StrokeColor,
                 StrokeThickness = StrokeThickness,
                 Fill = FillColor,
-                Points = new PointCollection(this.Points),
-                Uid = Guid.NewGuid().ToString()
+                Points = polygonPoints,
+                IsHitTestVisible = false
             };
+
 
             canvas.Children.Add(polygon);
         }
+
+
 
 
         public IShape Clone()
@@ -52,7 +75,8 @@ namespace PolygonPlugin
                 FillColor = this.FillColor,
                 Angle = this.Angle,
                 IsSelected = this.IsSelected,
-                OrderIndex = this.OrderIndex
+                OrderIndex = this.OrderIndex,
+                SideCount = this.SideCount
             };
         }
     }

@@ -8,16 +8,38 @@
         Title="MainWindow" Height="450" Width="800"
         Loaded="Window_Loaded">
     <DockPanel>
-       
         <StackPanel x:Name="PluginsPanel" 
                     DockPanel.Dock="Top" 
                     Orientation="Horizontal" 
                     Background="#EEE" 
                     Height="50">
-            <TextBlock Text="Инструменты:" VerticalAlignment="Center" Margin="10,0"/>
+            <TextBlock Text="Выбери фигуру:" VerticalAlignment="Center" Margin="10,0"/>
         </StackPanel>
+        <StackPanel DockPanel.Dock="Left" Width="150" Background="#F5F5F5" >
 
-        
+            <TextBlock Text="Цвет обводки:" Margin="0,10,0,5"/>
+            <ComboBox x:Name="StrokeColorPicker" SelectedIndex="0">
+                <ComboBoxItem Content="Черный" Tag="{x:Static Brushes.Black}"/>
+                <ComboBoxItem Content="Красный" Tag="{x:Static Brushes.Red}"/>
+                <ComboBoxItem Content="Зеленый" Tag="{x:Static Brushes.Green}"/>
+                <ComboBoxItem Content="Синий" Tag="{x:Static Brushes.Blue}"/>
+                <ComboBoxItem Content="Без обводки" Tag="{x:Static Brushes.Transparent}"/>
+            </ComboBox>
+
+            <TextBlock Text="Заливка:" Margin="0,15,0,5"/>
+            <ComboBox x:Name="FillColorPicker" SelectedIndex="0">
+                <ComboBoxItem Content="Прозрачный" Tag="{x:Static Brushes.Transparent}"/>
+                <ComboBoxItem Content="Красный" Tag="{x:Static Brushes.Red}"/>
+                <ComboBoxItem Content="Зеленый" Tag="{x:Static Brushes.Green}"/>
+                <ComboBoxItem Content="Синий" Tag="{x:Static Brushes.Blue}"/>
+                <ComboBoxItem Content="Желтый" Tag="{x:Static Brushes.Yellow}"/>
+            </ComboBox>
+
+            <TextBlock Text="Толщина линии:" Margin="0,15,0,5"/>
+            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+            <TextBlock Text="{Binding ElementName=ThicknessSlider, Path=Value}" HorizontalAlignment="Center" FontWeight="Bold"/>
+            
+        </StackPanel>
         <Canvas x:Name="MainCanvas" 
                 Background="White"
                 MouseDown="MainCanvas_MouseDown" 

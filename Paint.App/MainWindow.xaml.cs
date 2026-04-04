@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace Paint.App
 {
@@ -12,19 +13,23 @@ namespace Paint.App
     {
         private List<IShape> _shapes = new List<IShape>();
         private IShape _currentShape;
+        private IShape _selectedShape;
         private bool _isDrawingActive = false;
+        private int? _currentSideCount = 5;
         
 
       
         private IPlugin _selectedPlugin;
 
+
         public MainWindow()
         {
             InitializeComponent();
             this.MouseUp += MainWindow_MouseUp;
+            
         }
 
-        
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             LoadPlugins();
@@ -32,13 +37,12 @@ namespace Paint.App
 
         private void LoadPlugins()
         {
-            // Путь к папке Plugins в папке с программой
-            string pluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
+            string pluginsDirectory = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
 
             if (!Directory.Exists(pluginsDirectory))
                 Directory.CreateDirectory(pluginsDirectory);
 
-            // Ищем все файлы .dll
+           
             string[] dllFiles = Directory.GetFiles(pluginsDirectory, "*.dll");
 
             foreach (string dllPath in dllFiles)
@@ -46,7 +50,7 @@ namespace Paint.App
                 try
                 {
                     Assembly assembly = Assembly.LoadFrom(dllPath);
-                    // Ищем классы, которые реализуют IPlugin
+                   
                     var pluginTypes = assembly.GetTypes()
                         .Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
 
@@ -63,6 +67,28 @@ namespace Paint.App
             }
         }
 
+
+        private int? CountSideOfPolygon()
+        {
+            while (true)
+            {
+                string input = Microsoft.VisualBasic.Interaction.InputBox("Введите количество сторон многоугольника(3-8)", "Настройка фигуры", "5");
+
+                if (string.IsNullOrEmpty(input)) return null;
+
+
+                if (int.TryParse(input, out int result) && result >= 3 && result <= 8)
+                {
+                    return result;
+                }
+                
+                MessageBox.Show("Неверный ввод!!!Введите корректное число сторон(от 3 до 8)");
+
+            }
+            
+        }
+
+
         private void AddPluginButton(IPlugin plugin)
         {
             Button btn = new Button
@@ -76,6 +102,11 @@ namespace Paint.App
             {
                 _selectedPlugin = plugin;
                
+
+                if(plugin.Name == "Многоугольник")
+                {
+                    _currentSideCount = CountSideOfPolygon();
+                }
             };
 
             PluginsPanel.Children.Add(btn);
@@ -84,46 +115,77 @@ namespace Paint.App
         private void MainCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton != MouseButton.Left) return;
-            if (_selectedPlugin == null)
-            {
-                MessageBox.Show("Сначала выберите фигуру на панели инструментов!");
-                return;
-            }
+            if (_selectedPlugin == null) return;
 
             Point mousePos = e.GetPosition(MainCanvas);
-            
+            bool isPolyline = _selectedPlugin.Name == "Ломаная";
 
-
-            bool IsPlugin = _selectedPlugin.Name == "Ломаная";
-
-            if (IsPlugin) 
+            if (isPolyline)
             {
                 if (!_isDrawingActive)
                 {
+                    MainCanvas.CaptureMouse();
                     _isDrawingActive = true;
                     _currentShape = _selectedPlugin.CreateInstance();
-                    _currentShape.StrokeColor = Brushes.Black;
-                    _currentShape.StrokeThickness = 2;
+                    
+
+                    if (StrokeColorPicker.SelectedItem is ComboBoxItem strokeColorItem)
+                    {
+                        _currentShape.StrokeColor = (Brush)strokeColorItem.Tag;
+                    }
+
+
+                    _currentShape.StrokeThickness = ThicknessSlider.Value;
+
+
+
                     _currentShape.Points = new List<Point> { mousePos, mousePos };
                 }
                 else
                 {
+                  
                     _currentShape.Points.Add(mousePos);
                 }
             }
             else
             {
+              
                 _isDrawingActive = true;
                 _currentShape = _selectedPlugin.CreateInstance();
-                _currentShape.StrokeColor = Brushes.Black; 
-                _currentShape.StrokeThickness = 2;
+
+                var sideCountProperty = _currentShape.GetType().GetProperty("SideCount");
+
+                
+                if (sideCountProperty != null)
+                {
+                   
+                    sideCountProperty.SetValue(_currentShape, _currentSideCount);
+                }
+
+               
+
+
+                if (FillColorPicker.SelectedItem is ComboBoxItem fillItem)
+                {
+                    _currentShape.FillColor = (Brush)fillItem.Tag;
+                }
+
+
+                if (StrokeColorPicker.SelectedItem is ComboBoxItem strokeColorItem)
+                {
+                    _currentShape.StrokeColor = (Brush)strokeColorItem.Tag;
+                }
+
+                _currentShape.StrokeThickness = ThicknessSlider.Value;
+
+
+
                 _currentShape.Points = new List<Point> { mousePos, mousePos };
-
                 MainCanvas.CaptureMouse();
-
             }
             Redraw();
         }
+
 
         private void MainCanvas_MouseMove(object sender, MouseEventArgs e)
         {
@@ -135,6 +197,7 @@ namespace Paint.App
             }
         }
 
+
         private void MainCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             FinishDrawing(e);
@@ -145,19 +208,41 @@ namespace Paint.App
             FinishDrawing(e);
         }
 
+
         private void FinishDrawing(MouseButtonEventArgs e)
         {
             if (e.ChangedButton != MouseButton.Left) return;
+            if (_selectedPlugin == null) return;
 
-            bool IsPlugin = _selectedPlugin.Name == "Ломаная";
-
-            if (IsPlugin) return;
+           
+            if (_selectedPlugin.Name == "Ломаная") return;
 
             if (_isDrawingActive && _currentShape != null)
             {
-                _currentShape.Points[1] = e.GetPosition(MainCanvas);
-
                 _shapes.Add(_currentShape);
+                _currentShape = null;
+                _isDrawingActive = false;
+                MainCanvas.ReleaseMouseCapture();
+                Redraw();
+            }
+        }
+
+
+        private void MainCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_selectedPlugin == null) return;
+            bool isPolyline = _selectedPlugin.Name == "Ломаная";
+
+            if (isPolyline && _isDrawingActive && _currentShape != null)
+            {
+               
+                
+                if (_currentShape.Points.Count >= 2)
+                {
+                    _shapes.Add(_currentShape);
+                }
+
+               
                 _currentShape = null;
                 _isDrawingActive = false;
 
@@ -166,30 +251,8 @@ namespace Paint.App
             }
         }
 
-        private void MainCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            bool isPlugin = _selectedPlugin.Name == "Ломаная";
 
-            if(isPlugin && _isDrawingActive && _currentShape != null)
-            {
-                int lastIndex = _currentShape.Points.Count - 1;
-                _currentShape.Points.RemoveAt(lastIndex);
-
-
-                if(_currentShape.Points.Count >= 2)
-                {
-                    _shapes.Add(_currentShape);
-                }
-
-
-                _currentShape = null;
-                _isDrawingActive = false;
-           
-                Redraw();
-            }
-        }
-
-
+     
         private void Redraw()
         {
             MainCanvas.Children.Clear();
@@ -203,5 +266,7 @@ namespace Paint.App
                 _currentShape.Draw(MainCanvas);
             }
         }
+
+    
     }
 }

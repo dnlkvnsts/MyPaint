@@ -26,7 +26,6 @@ namespace PolylinePlugin
         public void Draw(Canvas canvas)
         {
             if (Points.Count < 2) return;
-          
 
             Polyline polyline = new Polyline
             {
@@ -34,7 +33,8 @@ namespace PolylinePlugin
                 StrokeThickness = StrokeThickness,
                 Fill = Brushes.Transparent,
                 Points = new PointCollection(this.Points),
-                Uid = Guid.NewGuid().ToString()
+                Uid = Guid.NewGuid().ToString(),
+                IsHitTestVisible = false
             }; 
 
             canvas.Children.Add(polyline);
