@@ -22,6 +22,7 @@
                 Background="White"
                 MouseDown="MainCanvas_MouseDown" 
                 MouseMove="MainCanvas_MouseMove" 
-                MouseUp="MainCanvas_MouseUp" />
+                MouseUp="MainCanvas_MouseUp"
+                MouseRightButtonDown="MainCanvas_MouseRightButtonDown"/>
     </DockPanel>
 </Window>

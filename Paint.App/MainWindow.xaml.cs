@@ -15,7 +15,7 @@ namespace Paint.App
         private bool _isDrawingActive = false;
         
 
-        // Храним выбранный плагин
+      
         private IPlugin _selectedPlugin;
 
         public MainWindow()
@@ -75,7 +75,7 @@ namespace Paint.App
             btn.Click += (s, e) =>
             {
                 _selectedPlugin = plugin;
-                // Можно добавить визуальное выделение нажатой кнопки
+               
             };
 
             PluginsPanel.Children.Add(btn);
@@ -91,15 +91,37 @@ namespace Paint.App
             }
 
             Point mousePos = e.GetPosition(MainCanvas);
-            _isDrawingActive = true;
+            
 
-            // ИСПОЛЬЗУЕМ ПЛАГИН вместо "new MyLine"
-            _currentShape = _selectedPlugin.CreateInstance();
-            _currentShape.StrokeColor = Brushes.Black; // Потом добавишь выбор цвета
-            _currentShape.StrokeThickness = 2;
-            _currentShape.Points = new List<Point> { mousePos, mousePos };
 
-            MainCanvas.CaptureMouse();
+            bool IsPlugin = _selectedPlugin.Name == "Ломаная";
+
+            if (IsPlugin) 
+            {
+                if (!_isDrawingActive)
+                {
+                    _isDrawingActive = true;
+                    _currentShape = _selectedPlugin.CreateInstance();
+                    _currentShape.StrokeColor = Brushes.Black;
+                    _currentShape.StrokeThickness = 2;
+                    _currentShape.Points = new List<Point> { mousePos, mousePos };
+                }
+                else
+                {
+                    _currentShape.Points.Add(mousePos);
+                }
+            }
+            else
+            {
+                _isDrawingActive = true;
+                _currentShape = _selectedPlugin.CreateInstance();
+                _currentShape.StrokeColor = Brushes.Black; 
+                _currentShape.StrokeThickness = 2;
+                _currentShape.Points = new List<Point> { mousePos, mousePos };
+
+                MainCanvas.CaptureMouse();
+
+            }
             Redraw();
         }
 
@@ -107,7 +129,8 @@ namespace Paint.App
         {
             if (_isDrawingActive && _currentShape != null)
             {
-                _currentShape.Points[1] = e.GetPosition(MainCanvas);
+                int lastIndex = _currentShape.Points.Count - 1;
+                _currentShape.Points[lastIndex] = e.GetPosition(MainCanvas);
                 Redraw();
             }
         }
@@ -126,6 +149,10 @@ namespace Paint.App
         {
             if (e.ChangedButton != MouseButton.Left) return;
 
+            bool IsPlugin = _selectedPlugin.Name == "Ломаная";
+
+            if (IsPlugin) return;
+
             if (_isDrawingActive && _currentShape != null)
             {
                 _currentShape.Points[1] = e.GetPosition(MainCanvas);
@@ -138,6 +165,30 @@ namespace Paint.App
                 Redraw();
             }
         }
+
+        private void MainCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            bool isPlugin = _selectedPlugin.Name == "Ломаная";
+
+            if(isPlugin && _isDrawingActive && _currentShape != null)
+            {
+                int lastIndex = _currentShape.Points.Count - 1;
+                _currentShape.Points.RemoveAt(lastIndex);
+
+
+                if(_currentShape.Points.Count >= 2)
+                {
+                    _shapes.Add(_currentShape);
+                }
+
+
+                _currentShape = null;
+                _isDrawingActive = false;
+           
+                Redraw();
+            }
+        }
+
 
         private void Redraw()
         {

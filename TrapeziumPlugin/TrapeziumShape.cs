@@ -55,23 +55,23 @@ namespace TrapeziumPlugin
 
             // 4. Реализация вращения (Angle)
             // Вращаем относительно центра фигуры
-            RotateTransform rotateTransform = new RotateTransform(
-                Angle,
-                left + width / 2,
-                top + height / 2
-            );
-            trapezium.RenderTransform = rotateTransform;
+            //RotateTransform rotateTransform = new RotateTransform(
+            //    Angle,
+            //    left + width / 2,
+            //    top + height / 2
+            //);
+            //trapezium.RenderTransform = rotateTransform;
 
             // 5. Визуализация выделения (IsSelected)
-            if (IsSelected)
-            {
+            //if (IsSelected)
+            //{
                 // Если фигура выделена, добавим ей эффект свечения или пунктирную обводку
-                trapezium.StrokeDashArray = new DoubleCollection() { 2, 2 };
-                trapezium.Stroke = Brushes.Red; // Для наглядности при выделении
-            }
+            //    trapezium.StrokeDashArray = new DoubleCollection() { 2, 2 };
+            //    trapezium.Stroke = Brushes.Red; // Для наглядности при выделении
+            //}
 
             // 6. Учет Z-Index (порядок отрисовки)
-            Canvas.SetZIndex(trapezium, OrderIndex);
+            //Canvas.SetZIndex(trapezium, OrderIndex);
 
             canvas.Children.Add(trapezium);
         }
