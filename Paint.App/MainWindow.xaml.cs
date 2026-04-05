@@ -20,13 +20,69 @@ namespace Paint.App
         private IPlugin _selectedPlugin;
       
         private bool _isSelectedMode = false;
+        private IShape _clipboardShape;
+
+        private bool _isDragging = false;
+        private Point _lastMousePosition;
 
         public MainWindow()
         {
             InitializeComponent();
             this.MouseUp += MainWindow_MouseUp;
-            
+            this.KeyDown += MainWindow_KeyDown;
+            this.Focusable = true;
+            this.Focus();
         }
+
+
+
+        //click methods
+        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+           if(Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
+            {
+                if (_selectedShape != null)
+                {
+                    _clipboardShape = _selectedShape.Clone();
+                }
+            }
+
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.V)
+            {
+                if (_clipboardShape != null)
+                {
+                    IShape pastedShaped = _clipboardShape.Clone();
+
+                    for(int i = 0; i < pastedShaped.Points.Count; i++)
+                    {
+                        pastedShaped.Points[i] = new Point(
+                            pastedShaped.Points[i].X + 10,
+                            pastedShaped.Points[i].Y + 10);
+                    }
+
+                    _shapes.Add(pastedShaped);
+                    _selectedShape = pastedShaped;
+
+                    _clipboardShape = pastedShaped.Clone();
+
+
+                    Redraw();
+                }
+            }
+
+            if (e.Key == Key.Delete || e.Key == Key.Z)
+            {
+                if (_selectedShape != null)
+                {
+                    _shapes.Remove(_selectedShape);
+                    _selectedShape = null;
+                    Redraw();
+                }
+            }
+        }
+
+        //
+
 
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -36,8 +92,7 @@ namespace Paint.App
 
 
 
-
-        //
+        //work with plugins
         private void LoadPlugins()
         {
             string pluginsDirectory = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
@@ -97,7 +152,8 @@ namespace Paint.App
             PluginsPanel.Children.Add(btn);
         }
 
-        //
+        //work with mouse
+
 
         private void MainCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -115,8 +171,10 @@ namespace Paint.App
                     if(IsPointInShape(mousePos, _shapes[i]))
                     {
                         _selectedShape =  _shapes[i];
+                        _isDragging = true;
+                        _lastMousePosition = mousePos;
                         ThicknessSlider.Value = _selectedShape.StrokeThickness;
-
+                        MainCanvas.CaptureMouse();
                         break;
                     }
                 }
@@ -200,12 +258,33 @@ namespace Paint.App
 
         private void MainCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (_isDrawingActive && _currentShape != null)
+
+            Point currentPos = e.GetPosition(MainCanvas);
+
+            if (_isDragging && _selectedShape != null)
             {
-                int lastIndex = _currentShape.Points.Count - 1;
-                _currentShape.Points[lastIndex] = e.GetPosition(MainCanvas);
+               
+                double dx = currentPos.X - _lastMousePosition.X;
+                double dy = currentPos.Y - _lastMousePosition.Y;
+
+                
+                for (int i = 0; i < _selectedShape.Points.Count; i++)
+                {
+                    _selectedShape.Points[i] = new Point(
+                        _selectedShape.Points[i].X + dx,
+                        _selectedShape.Points[i].Y + dy);
+                }
+
+                _lastMousePosition = currentPos; 
                 Redraw();
             }
+            else if (_isDrawingActive && _currentShape != null) 
+            {
+                int lastIndex = _currentShape.Points.Count - 1;
+                _currentShape.Points[lastIndex] = currentPos;
+                Redraw();
+            }
+   
         }
 
 
@@ -223,6 +302,11 @@ namespace Paint.App
 
         private void FinishDrawing(MouseButtonEventArgs e)
         {
+            _isDragging = false;
+
+            MainCanvas.ReleaseMouseCapture();
+            
+
             if (e.ChangedButton != MouseButton.Left) return;
             if (_selectedPlugin == null) return;
 
@@ -286,7 +370,7 @@ namespace Paint.App
 
 
 
-        //
+        //count polygon side
 
         private int? CountSideOfPolygon()
         {
@@ -396,14 +480,14 @@ namespace Paint.App
 
             Rectangle rect = new Rectangle
             {
-                Width = maxX - minX + 10,
-                Height = maxY - minY + 10,
+                Width = maxX - minX + 20,
+                Height = maxY - minY + 20,
                 Stroke = Brushes.DeepSkyBlue,
                 StrokeThickness = 1,
                 StrokeDashArray = new DoubleCollection() { 4, 2 }
             };
-            Canvas.SetLeft(rect, minX - 5);
-            Canvas.SetTop(rect, minY - 5);
+            Canvas.SetLeft(rect, minX - 10);
+            Canvas.SetTop(rect, minY - 10);
             MainCanvas.Children.Add(rect);
         }
 

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Paint.App"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded" >
     <DockPanel>
         <StackPanel x:Name="PluginsPanel" 
                     DockPanel.Dock="Top" 
