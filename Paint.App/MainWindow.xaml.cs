@@ -25,6 +25,14 @@ namespace Paint.App
         private bool _isDragging = false;
         private Point _lastMousePosition;
 
+        //
+        private bool _isResizing = false;
+        private string _activeHandle = "";
+        private Point _resizeAnchor;
+        //
+
+
+        private bool _isRotating = false;
         public MainWindow()
         {
             InitializeComponent();
@@ -77,6 +85,30 @@ namespace Paint.App
                     _shapes.Remove(_selectedShape);
                     _selectedShape = null;
                     Redraw();
+                }
+            }
+
+
+            if (_selectedShape != null)
+            {
+                double step = 5;
+                double dx = 0, dy = 0;
+
+                if (e.Key == Key.Left) dx = -step;
+                if (e.Key == Key.Right) dx = step;
+                if (e.Key == Key.Up) dy = -step;
+                if (e.Key == Key.Down) dy = step;
+
+                if (dx != 0 || dy != 0)
+                {
+                    for (int i = 0; i < _selectedShape.Points.Count; i++)
+                    {
+                        _selectedShape.Points[i] = new Point(
+                            _selectedShape.Points[i].X + dx,
+                            _selectedShape.Points[i].Y + dy);
+                    }
+                    Redraw();
+                    e.Handled = true; 
                 }
             }
         }
@@ -160,7 +192,49 @@ namespace Paint.App
             if (e.ChangedButton != MouseButton.Left) return;
             Point mousePos = e.GetPosition(MainCanvas);
 
-            
+            //
+
+            if (_isSelectedMode && _selectedShape != null)
+            {
+               
+                var hitResult = VisualTreeHelper.HitTest(MainCanvas, mousePos);
+                if (hitResult?.VisualHit is Rectangle handle && handle.Tag is string pos)
+                {
+                    if (pos == "ROT")
+                    {
+                        _isRotating = true;
+                        _lastMousePosition = mousePos;
+                        MainCanvas.CaptureMouse();
+                        return;
+                    }
+
+                    _isResizing = true;
+                    _activeHandle = pos;
+                    _lastMousePosition = mousePos;
+
+                    double minX = _selectedShape.Points.Min(p => p.X);
+                    double maxX = _selectedShape.Points.Max(p => p.X);
+                    double minY = _selectedShape.Points.Min(p => p.Y);
+                    double maxY = _selectedShape.Points.Max(p => p.Y);
+                    double midX = (minX + maxX) / 2;
+                    double midY = (minY + maxY) / 2;
+
+                   
+                    if (pos == "SE") _resizeAnchor = new Point(minX, minY);
+                    else if (pos == "NW") _resizeAnchor = new Point(maxX, maxY);
+                    else if (pos == "NE") _resizeAnchor = new Point(minX, maxY);
+                    else if (pos == "SW") _resizeAnchor = new Point(maxX, minY);
+                    else if (pos == "N") _resizeAnchor = new Point(midX, maxY); 
+                    else if (pos == "S") _resizeAnchor = new Point(midX, minY); 
+                    else if (pos == "W") _resizeAnchor = new Point(maxX, midY); 
+                    else if (pos == "E") _resizeAnchor = new Point(minX, midY); 
+
+                    MainCanvas.CaptureMouse();
+                    return;
+                }
+            }
+            //
+
 
             if (_isSelectedMode)
             {
@@ -261,7 +335,78 @@ namespace Paint.App
 
             Point currentPos = e.GetPosition(MainCanvas);
 
-            if (_isDragging && _selectedShape != null)
+            //
+            if (_isRotating && _selectedShape != null)
+            {
+               
+                double minX = _selectedShape.Points.Min(p => p.X);
+                double maxX = _selectedShape.Points.Max(p => p.X);
+                double minY = _selectedShape.Points.Min(p => p.Y);
+                double maxY = _selectedShape.Points.Max(p => p.Y);
+                Point center = new Point((minX + maxX) / 2, (minY + maxY) / 2);
+
+                
+                double angleRad = Math.Atan2(currentPos.Y - center.Y, currentPos.X - center.X);
+                double angleDeg = angleRad * (180 / Math.PI);
+
+               
+                _selectedShape.Angle = angleDeg + 90;
+
+                Redraw();
+                return;
+            }
+            else if (_isResizing && _selectedShape != null)
+            {
+                
+                double oldDx = _lastMousePosition.X - _resizeAnchor.X;
+                double oldDy = _lastMousePosition.Y - _resizeAnchor.Y;
+                double newDx = currentPos.X - _resizeAnchor.X;
+                double newDy = currentPos.Y - _resizeAnchor.Y;
+
+               
+                if (Math.Abs(oldDx) < 0.5) oldDx = 0.5;
+                if (Math.Abs(oldDy) < 0.5) oldDy = 0.5;
+
+               
+                double scaleX = 1.0;
+                double scaleY = 1.0;
+
+                if (_activeHandle.Contains("E") || _activeHandle.Contains("W")) scaleX = newDx / oldDx;
+                if (_activeHandle.Contains("N") || _activeHandle.Contains("S")) scaleY = newDy / oldDy;
+
+                
+                if (_selectedShape.GetType().Name.Contains("Polygon") && _selectedShape.Points.Count == 2)
+                {
+                   
+                    double uniformScale = (_activeHandle.Length > 1)
+                    ? (Math.Abs(scaleX) + Math.Abs(scaleY)) / 2 * Math.Sign(scaleX + scaleY)
+                    : (scaleX != 1.0 ? scaleX : scaleY);
+        
+        
+                        for (int i = 0; i < _selectedShape.Points.Count; i++)
+                        {
+                            Point p = _selectedShape.Points[i];
+                            double nx = _resizeAnchor.X + (p.X - _resizeAnchor.X) * uniformScale;
+                            double ny = _resizeAnchor.Y + (p.Y - _resizeAnchor.Y) * uniformScale;
+                            _selectedShape.Points[i] = new Point(nx, ny);
+                        }
+                }
+                else
+                {
+                   
+                    for (int i = 0; i < _selectedShape.Points.Count; i++)
+                    {
+                        Point p = _selectedShape.Points[i];
+                        double nx = _resizeAnchor.X + (p.X - _resizeAnchor.X) * scaleX;
+                        double ny = _resizeAnchor.Y + (p.Y - _resizeAnchor.Y) * scaleY;
+                        _selectedShape.Points[i] = new Point(nx, ny);
+                    }
+                }
+
+                _lastMousePosition = currentPos;
+                Redraw();
+            }
+            else if (_isDragging && _selectedShape != null)
             {
                
                 double dx = currentPos.X - _lastMousePosition.X;
@@ -303,6 +448,13 @@ namespace Paint.App
         private void FinishDrawing(MouseButtonEventArgs e)
         {
             _isDragging = false;
+            _isRotating = false;
+
+            //
+            _isResizing = false;
+            _activeHandle = "";
+            //
+
 
             MainCanvas.ReleaseMouseCapture();
             
@@ -426,7 +578,7 @@ namespace Paint.App
 
             double minX, maxX, minY, maxY;
 
-            // Логика для Многоугольника (Центр + Радиус)
+           
             if (shape.GetType().Name.Contains("Polygon") && shape.Points.Count == 2)
             {
                 Point center = shape.Points[0];
@@ -438,7 +590,7 @@ namespace Paint.App
                 minY = center.Y - radius;
                 maxY = center.Y + radius;
             }
-            else // Для обычных фигур
+            else 
             {
                 minX = shape.Points.Min(pt => pt.X);
                 maxX = shape.Points.Max(pt => pt.X);
@@ -477,6 +629,10 @@ namespace Paint.App
                 maxY = shape.Points.Max(p => p.Y);
             }
 
+            //
+            double midX = (minX + maxX) / 2;
+            double midY = (minY + maxY) / 2;
+            //
 
             Rectangle rect = new Rectangle
             {
@@ -489,6 +645,33 @@ namespace Paint.App
             Canvas.SetLeft(rect, minX - 10);
             Canvas.SetTop(rect, minY - 10);
             MainCanvas.Children.Add(rect);
+
+            //
+
+            AddHandle(minX - 14, minY - 14, "NW"); 
+            AddHandle(maxX + 6, minY - 14, "NE");
+            AddHandle(minX - 14, maxY + 6, "SW");
+            AddHandle(maxX + 6, maxY + 6, "SE");
+
+            AddHandle(midX - 4, minY - 14, "N");  
+            AddHandle(midX - 4, maxY + 6, "S");
+            AddHandle(minX - 14, midY - 4, "W");
+            AddHandle(maxX + 6, midY - 4, "E");
+            //
+
+            AddHandle(midX - 4, minY - 40, "ROT"); // "ROT" - метка для вращения, на 40 пикселей выше фигуры
+
+            // Для красоты можно провести линию от фигуры к этой ручке
+            Line connector = new Line
+            {
+                X1 = midX,
+                Y1 = minY - 10,
+                X2 = midX,
+                Y2 = minY - 32,
+                Stroke = Brushes.DeepSkyBlue,
+                StrokeThickness = 1
+            };
+            MainCanvas.Children.Add(connector);
         }
 
         private void ThicknessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -502,5 +685,24 @@ namespace Paint.App
 
 
         //
+
+        private void AddHandle(double x, double y, string position)
+        {
+            Rectangle handle = new Rectangle
+            {
+                Width = 8,
+                Height = 8,
+                Fill = Brushes.White,
+                Stroke = Brushes.DeepSkyBlue,
+                StrokeThickness = 1,
+                Tag = position 
+            };
+            Canvas.SetLeft(handle, x);
+            Canvas.SetTop(handle, y);
+            MainCanvas.Children.Add(handle);
+        }
+
+        //
+
     }
 }

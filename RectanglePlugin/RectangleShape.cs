@@ -43,7 +43,9 @@ namespace RectanglePlugin
                 Fill = FillColor,
                 Width = width,
                 Height = height,
-                Uid = Guid.NewGuid().ToString()
+                Uid = Guid.NewGuid().ToString(),
+                RenderTransformOrigin = new Point(0.5, 0.5), 
+                RenderTransform = new RotateTransform(Angle)
             };
 
             Canvas.SetLeft(rectangle, left);
