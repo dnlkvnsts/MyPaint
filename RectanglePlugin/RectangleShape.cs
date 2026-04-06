@@ -16,9 +16,9 @@ namespace RectanglePlugin
         public List<Point> Points { get; set; } = new List<Point>();
         public Brush StrokeColor { get; set; } = Brushes.Black;
         public double StrokeThickness { get; set; } = 2;
-        public Brush FillColor { get; set; } = Brushes.Transparent; // Заливка
-        public double Angle { get; set; } = 0;                     // Угол поворота
-        public bool IsSelected { get; set; } = false;              // Выделена ли фигура
+        public Brush FillColor { get; set; } = Brushes.Transparent;
+        public double Angle { get; set; } = 0;                   
+        public bool IsSelected { get; set; } = false;             
         public int OrderIndex { get; set; } = 0;
 
 
@@ -61,7 +61,7 @@ namespace RectanglePlugin
         {
             return new RectangleShape
             {
-                // Создаем новый список точек, чтобы не было ссылки на старый
+               
                 Points = new List<Point>(this.Points),
                 StrokeColor = this.StrokeColor,
                 StrokeThickness = this.StrokeThickness,

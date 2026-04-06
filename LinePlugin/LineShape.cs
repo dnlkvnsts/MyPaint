@@ -38,6 +38,8 @@ namespace LinePlugin
             }
         }
 
+
+       
         public void Draw(Canvas canvas)
         {
             if (Points.Count < 2) return;
@@ -50,7 +52,16 @@ namespace LinePlugin
                 Y2 = Points[1].Y,
                 Stroke = StrokeColor,
                 StrokeThickness = StrokeThickness
+               
             };
+
+            double centerX = (Points[0].X + Points[1].X) / 2;
+            double centerY = (Points[0].Y + Points[1].Y) / 2;
+
+           
+            RotateTransform rotateTransform = new RotateTransform(Angle, centerX, centerY);
+            line.RenderTransform = rotateTransform;
+
 
             canvas.Children.Add(line);
         }
@@ -59,7 +70,7 @@ namespace LinePlugin
         {
             return new LineShape
             {
-                Points = new List<Point>(this.Points),
+                Points = new List<Point>(this.Points.Select(p => new Point(p.X, p.Y))),
                 StrokeColor = this.StrokeColor,
                 StrokeThickness = this.StrokeThickness,
                 FillColor = this.FillColor,

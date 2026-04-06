@@ -659,9 +659,9 @@ namespace Paint.App
             AddHandle(maxX + 6, midY - 4, "E");
             //
 
-            AddHandle(midX - 4, minY - 40, "ROT"); // "ROT" - метка для вращения, на 40 пикселей выше фигуры
+            AddHandle(midX - 4, minY - 40, "ROT"); 
 
-            // Для красоты можно провести линию от фигуры к этой ручке
+           
             Line connector = new Line
             {
                 X1 = midX,

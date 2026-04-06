@@ -40,6 +40,8 @@ namespace EllipsePlugin
                 StrokeThickness = StrokeThickness,
                 Fill = FillColor,
                 Uid = Guid.NewGuid().ToString(),
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new RotateTransform(Angle)
             };  
 
             Canvas.SetLeft(ellipse, left);

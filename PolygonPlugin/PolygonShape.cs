@@ -55,8 +55,11 @@ namespace PolygonPlugin
                 Fill = FillColor,
                 Points = polygonPoints,
                 IsHitTestVisible = false
+               
             };
 
+            RotateTransform rotateTransform = new RotateTransform(Angle, center.X, center.Y);
+            polygon.RenderTransform = rotateTransform;
 
             canvas.Children.Add(polygon);
         }
@@ -69,7 +72,7 @@ namespace PolygonPlugin
             return new PolygonShape
             {
 
-                Points = new List<Point>(this.Points),
+                Points = new List<Point>(this.Points.Select(p => new Point(p.X, p.Y))),
                 StrokeColor = this.StrokeColor,
                 StrokeThickness = this.StrokeThickness,
                 FillColor = this.FillColor,

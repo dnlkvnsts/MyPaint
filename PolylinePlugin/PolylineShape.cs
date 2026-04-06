@@ -25,7 +25,17 @@ namespace PolylinePlugin
 
         public void Draw(Canvas canvas)
         {
-            if (Points.Count < 2) return;
+            if (Points == null || Points.Count < 2) return;
+
+            
+            double minX = Points.Min(p => p.X);
+            double maxX = Points.Max(p => p.X);
+            double minY = Points.Min(p => p.Y);
+            double maxY = Points.Max(p => p.Y);
+
+           
+            double centerX = (minX + maxX) / 2;
+            double centerY = (minY + maxY) / 2;
 
             Polyline polyline = new Polyline
             {
@@ -35,7 +45,11 @@ namespace PolylinePlugin
                 Points = new PointCollection(this.Points),
                 Uid = Guid.NewGuid().ToString(),
                 IsHitTestVisible = false
-            }; 
+                
+            };
+
+            RotateTransform rotateTransform = new RotateTransform(Angle, centerX, centerY);
+            polyline.RenderTransform = rotateTransform;
 
             canvas.Children.Add(polyline);
         }
@@ -45,8 +59,8 @@ namespace PolylinePlugin
         {
             return new PolylineShape
             {
-               
-                Points = new List<Point>(this.Points),
+
+                Points = new List<Point>(this.Points.Select(p => new Point(p.X, p.Y))),
                 StrokeColor = this.StrokeColor,
                 StrokeThickness = this.StrokeThickness,
                 FillColor = this.FillColor,
