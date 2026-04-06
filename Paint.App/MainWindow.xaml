@@ -8,16 +8,18 @@
         Title="MainWindow" Height="450" Width="800"
         Loaded="Window_Loaded" >
     <DockPanel>
+        <!-- ВЕРХНЯЯ ПАНЕЛЬ (ПЛАГИНЫ) -->
         <StackPanel x:Name="PluginsPanel" 
-                    DockPanel.Dock="Top" 
-                    Orientation="Horizontal" 
-                    Background="#EEE" 
-                    Height="50">
+                DockPanel.Dock="Top" 
+                Orientation="Horizontal" 
+                Background="#EEE" 
+                Height="50">
             <TextBlock Text="Выбери фигуру:" VerticalAlignment="Center" Margin="10,0"/>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Left" Width="150" Background="#F5F5F5" >
 
-            <TextBlock Text="Цвет обводки:" Margin="0,10,0,5"/>
+        <!-- ЛЕВАЯ ПАНЕЛЬ (ИНСТРУМЕНТЫ) -->
+        <StackPanel DockPanel.Dock="Left" Width="150" Background="#F5F5F5" >
+            <TextBlock Text="Цвет обводки:" Margin="0,5,0,2"/>
             <ComboBox x:Name="StrokeColorPicker" SelectedIndex="0" SelectionChanged="StrokeColorPicker_SelectionChanged" >
                 <ComboBoxItem Content="Черный" Tag="{x:Static Brushes.Black}"/>
                 <ComboBoxItem Content="Красный" Tag="{x:Static Brushes.Red}"/>
@@ -26,7 +28,7 @@
                 <ComboBoxItem Content="Без обводки" Tag="{x:Static Brushes.Transparent}"/>
             </ComboBox>
 
-            <TextBlock Text="Заливка:" Margin="0,15,0,5"/>
+            <TextBlock Text="Заливка:" Margin="0,10,0,2"/>
             <ComboBox x:Name="FillColorPicker" SelectedIndex="0" SelectionChanged="FillColorPicker_SelectionChanged" >
                 <ComboBoxItem Content="Прозрачный" Tag="{x:Static Brushes.Transparent}"/>
                 <ComboBoxItem Content="Красный" Tag="{x:Static Brushes.Red}"/>
@@ -35,16 +37,45 @@
                 <ComboBoxItem Content="Желтый" Tag="{x:Static Brushes.Yellow}"/>
             </ComboBox>
 
-            <TextBlock Text="Толщина линии:" Margin="0,15,0,5"/>
-            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="ThicknessSlider_ValueChanged" />
+            <TextBlock Text="Толщина:" Margin="0,10,0,2"/>
+            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" ValueChanged="ThicknessSlider_ValueChanged" />
             <TextBlock Text="{Binding ElementName=ThicknessSlider, Path=Value}" HorizontalAlignment="Center" FontWeight="Bold"/>
-            <Button  Content="Курсор(выбор)" Click="SelectMode_Click" Padding="10" Margin="20"/>
+
+            <Button Content="Курсор (Выбор)" Click="SelectMode_Click" Margin="0,20,0,5" Padding="5"/>
         </StackPanel>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ (СЛОИ) -->
+        <StackPanel DockPanel.Dock="Right" Width="180" Background="#F5F5F5" >
+            <TextBlock Text="СЛОИ" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,5"/>
+
+            <ListBox x:Name="LayersListBox" Height="200" SelectionChanged="LayersListBox_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center" Click="LayerVisibility_Click"/>
+                            <TextBlock Text="{Binding Name}" Margin="5,0" Width="80"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <UniformGrid Columns="2" Margin="0,5">
+                <Button Content="+" Click="AddLayer_Click" ToolTip="Добавить слой" Padding="5"/>
+                <Button Content="-" Click="RemoveLayer_Click" ToolTip="Удалить слой" Padding="5"/>
+                <Button Content="▲" Click="MoveLayerUp_Click" ToolTip="Выше" Padding="5"/>
+                <Button Content="▼" Click="MoveLayerDown_Click" ToolTip="Ниже" Padding="5"/>
+            </UniformGrid>
+
+            <Button Content="Переместить сюда" Click="MoveShapesToLayer_Click" 
+                Margin="0,5" Padding="5" FontSize="10" ToolTip="Переместить выбранные фигуры в выделенный слой"/>
+        </StackPanel>
+
+        <!-- ЦЕНТРАЛЬНАЯ ЧАСТЬ (ХОЛСТ) -->
         <Canvas x:Name="MainCanvas" 
-                Background="White"
-                MouseDown="MainCanvas_MouseDown" 
-                MouseMove="MainCanvas_MouseMove" 
-                MouseUp="MainCanvas_MouseUp"
-                MouseRightButtonDown="MainCanvas_MouseRightButtonDown"/>
+            Background="White"
+            MouseDown="MainCanvas_MouseDown" 
+            MouseMove="MainCanvas_MouseMove" 
+            MouseUp="MainCanvas_MouseUp"
+            MouseRightButtonDown="MainCanvas_MouseRightButtonDown"/>
     </DockPanel>
 </Window>
