@@ -1,4 +1,6 @@
-﻿using Paint.App.Commands;
+﻿using Microsoft.Win32;
+using Newtonsoft.Json;
+using Paint.App.Commands;
 using Paint.App.Infrastructure;
 using Paint.App.Models;
 using Paint.Core;
@@ -21,16 +23,16 @@ namespace Paint.App
         private IShape _currentShape;
 
 
-        private List<IShape> _selectedShapes = new List<IShape>(); 
+        private List<IShape> _selectedShapes = new List<IShape>();
         private List<IShape> _clipboardShapes = new List<IShape>();
 
         private bool _isDrawingActive = false;
         private int? _currentSideCount = 5;
-        
+
         private IPlugin _selectedPlugin;
-      
+
         private bool _isSelectedMode = false;
-        
+
 
         private bool _isDragging = false;
         private Point _lastMousePosition;
@@ -76,7 +78,7 @@ namespace Paint.App
         //click methods
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
-           
+
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
             {
                 if (_selectedShapes.Count > 0)
@@ -107,14 +109,14 @@ namespace Paint.App
                         pastedBatch.Add(pastedShape);
                     }
 
-                   
+
                     foreach (var s in pastedBatch)
                     {
                         _undoManager.Execute(new AddShapeCommand(_activeLayer, s, Redraw));
                         _selectedShapes.Add(s);
                     }
 
-                 
+
                     _clipboardShapes = pastedBatch.Select(s => s.Clone()).ToList();
                     Redraw();
                 }
@@ -137,7 +139,7 @@ namespace Paint.App
                             }
                         }
                     }
-                    
+
                     _undoManager.Execute(new RemoveShapeCommand(shapesToRemove, Redraw));
                     _selectedShapes.Clear();
                 }
@@ -146,7 +148,7 @@ namespace Paint.App
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Z)
             {
                 _undoManager.Undo();
-               
+
                 Redraw();
                 return;
             }
@@ -174,28 +176,28 @@ namespace Paint.App
                 // Если нажата одна из стрелок
                 if (dx != 0 || dy != 0)
                 {
-                   
+
                     var changes = new List<(IShape shape, List<Point> oldPts, double oldAng, List<Point> newPts, double newAng)>();
 
                     foreach (var shape in _selectedShapes)
                     {
-                        
+
                         var oldPoints = shape.Points.Select(p => new Point(p.X, p.Y)).ToList();
                         double oldAngle = shape.Angle;
 
-                        
-                        var newPoints = shape.Points.Select(p => new Point(p.X + dx, p.Y + dy)).ToList();
-                        double newAngle = shape.Angle; 
 
-                       
+                        var newPoints = shape.Points.Select(p => new Point(p.X + dx, p.Y + dy)).ToList();
+                        double newAngle = shape.Angle;
+
+
                         changes.Add((shape, oldPoints, oldAngle, newPoints, newAngle));
                     }
 
-                   
+
                     var moveCommand = new TransformShapeCommand(changes, Redraw);
                     _undoManager.Execute(moveCommand);
 
-                    e.Handled = true; 
+                    e.Handled = true;
                 }
             }
         }
@@ -219,7 +221,7 @@ namespace Paint.App
             if (!Directory.Exists(pluginsDirectory))
                 Directory.CreateDirectory(pluginsDirectory);
 
-           
+
             string[] dllFiles = Directory.GetFiles(pluginsDirectory, "*.dll");
 
             foreach (string dllPath in dllFiles)
@@ -227,7 +229,7 @@ namespace Paint.App
                 try
                 {
                     Assembly assembly = Assembly.LoadFrom(dllPath);
-                   
+
                     var pluginTypes = assembly.GetTypes()
                         .Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
 
@@ -258,20 +260,20 @@ namespace Paint.App
 
             btn.Click += (s, e) =>
             {
-                
+
                 _selectedPlugin = plugin;
 
-                
+
                 _isSelectedMode = false;
                 _selectedShapes.Clear();
 
-               
+
                 if (plugin.Name == "Многоугольник")
                 {
                     _currentSideCount = CountSideOfPolygon();
                 }
 
-               
+
                 Redraw();
             };
 
@@ -291,7 +293,7 @@ namespace Paint.App
 
             if (_isSelectedMode)
             {
-               
+
                 var primaryShape = _selectedShapes.LastOrDefault();
                 if (primaryShape != null)
                 {
@@ -335,15 +337,15 @@ namespace Paint.App
                     }
                 }
 
-                
+
                 IShape clickedShape = null;
 
-                
+
                 for (int i = _layers.Count - 1; i >= 0; i--)
                 {
-                    if (!_layers[i].IsVisible) continue; 
+                    if (!_layers[i].IsVisible) continue;
 
-                    
+
                     for (int j = _layers[i].Shapes.Count - 1; j >= 0; j--)
                     {
                         if (IsPointInShape(mousePos, _layers[i].Shapes[j]))
@@ -388,16 +390,16 @@ namespace Paint.App
                 else
                 {
                     // 3. ВЫДЕЛЕНИЕ РАМКОЙ
-                   
-                        // Если кликнули в пустоту без Shift — снимаем всё выделение
-                        if (!isShiftPressed) _selectedShapes.Clear();
-                    
+
+                    // Если кликнули в пустоту без Shift — снимаем всё выделение
+                    if (!isShiftPressed) _selectedShapes.Clear();
+
                 }
                 Redraw();
                 return;
             }
 
-            
+
             if (_selectedPlugin == null) return;
 
             // --- НОВОЕ: Обработка Ломаной ---
@@ -432,7 +434,7 @@ namespace Paint.App
             Redraw();
         }
 
-        
+
         private void ApplyCurrentSettings(IShape shape)
         {
             var sideCountProp = shape.GetType().GetProperty("SideCount");
@@ -646,18 +648,18 @@ namespace Paint.App
             if (MainCanvas == null) return;
             MainCanvas.Children.Clear();
 
-           
+
             foreach (var layer in _layers)
             {
-               
+
                 if (!layer.IsVisible) continue;
 
-                
+
                 foreach (var shape in layer.Shapes)
                 {
                     shape.Draw(MainCanvas);
 
-                    
+
                     if (_selectedShapes.Contains(shape))
                     {
                         DrawSelectionFrame(shape);
@@ -665,7 +667,7 @@ namespace Paint.App
                 }
             }
 
-            
+
             if (_currentShape != null)
             {
                 _currentShape.Draw(MainCanvas);
@@ -711,17 +713,17 @@ namespace Paint.App
             _thicknessAtStart = ThicknessSlider.Value;
         }
 
-     
+
 
         private void ThicknessSlider_Start(object sender, MouseButtonEventArgs e)
         {
-           
+
             _thicknessStartValue = ThicknessSlider.Value;
         }
 
         private void ThicknessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-           
+
             if (_selectedShapes != null && _selectedShapes.Count > 0)
             {
                 foreach (var shape in _selectedShapes)
@@ -734,15 +736,15 @@ namespace Paint.App
 
         private void ThicknessSlider_End(object sender, MouseButtonEventArgs e)
         {
-           
+
             if (_selectedShapes != null && _selectedShapes.Count > 0)
             {
                 double newValue = ThicknessSlider.Value;
 
-                
+
                 foreach (var s in _selectedShapes) s.StrokeThickness = _thicknessStartValue;
 
-               
+
                 var cmd = new ChangeThicknessCommand(new List<IShape>(_selectedShapes), newValue, Redraw);
                 _undoManager.Execute(cmd);
             }
@@ -751,16 +753,16 @@ namespace Paint.App
 
         private void StrokeColorPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            
+
             if (_selectedShapes.Count > 0 && StrokeColorPicker.SelectedItem is ComboBoxItem item)
             {
                 Brush newBrush = (Brush)item.Tag;
 
-               
+
                 _undoManager.Execute(new ChangeColorCommand(
-                    new List<IShape>(_selectedShapes), 
+                    new List<IShape>(_selectedShapes),
                     newBrush,
-                    true, 
+                    true,
                     Redraw));
             }
             this.Focus();
@@ -772,7 +774,7 @@ namespace Paint.App
             {
                 Brush newBrush = (Brush)item.Tag;
 
-               
+
                 _undoManager.Execute(new ChangeColorCommand(
                     new List<IShape>(_selectedShapes),
                     newBrush,
@@ -790,7 +792,7 @@ namespace Paint.App
 
             double minX, maxX, minY, maxY;
 
-           
+
             if (shape.GetType().Name.Contains("Polygon") && shape.Points.Count == 2)
             {
                 Point center = shape.Points[0];
@@ -802,7 +804,7 @@ namespace Paint.App
                 minY = center.Y - radius;
                 maxY = center.Y + radius;
             }
-            else 
+            else
             {
                 minX = shape.Points.Min(pt => pt.X);
                 maxX = shape.Points.Max(pt => pt.X);
@@ -819,13 +821,13 @@ namespace Paint.App
         {
             double minX, maxX, minY, maxY;
 
-           
+
             if (shape.GetType().Name.Contains("Polygon") && shape.Points.Count == 2)
             {
                 Point center = shape.Points[0];
                 Point radiusPoint = shape.Points[1];
 
-               
+
                 double radius = Math.Sqrt(Math.Pow(radiusPoint.X - center.X, 2) + Math.Pow(radiusPoint.Y - center.Y, 2));
 
                 minX = center.X - radius;
@@ -833,7 +835,7 @@ namespace Paint.App
                 minY = center.Y - radius;
                 maxY = center.Y + radius;
             }
-            else 
+            else
             {
                 minX = shape.Points.Min(p => p.X);
                 maxX = shape.Points.Max(p => p.X);
@@ -860,20 +862,20 @@ namespace Paint.App
 
             //
 
-            AddHandle(minX - 14, minY - 14, "NW"); 
+            AddHandle(minX - 14, minY - 14, "NW");
             AddHandle(maxX + 6, minY - 14, "NE");
             AddHandle(minX - 14, maxY + 6, "SW");
             AddHandle(maxX + 6, maxY + 6, "SE");
 
-            AddHandle(midX - 4, minY - 14, "N");  
+            AddHandle(midX - 4, minY - 14, "N");
             AddHandle(midX - 4, maxY + 6, "S");
             AddHandle(minX - 14, midY - 4, "W");
             AddHandle(maxX + 6, midY - 4, "E");
             //
 
-            AddHandle(midX - 4, minY - 40, "ROT"); 
+            AddHandle(midX - 4, minY - 40, "ROT");
 
-           
+
             Line connector = new Line
             {
                 X1 = midX,
@@ -886,7 +888,7 @@ namespace Paint.App
             MainCanvas.Children.Add(connector);
         }
 
-       
+
 
 
         //
@@ -900,7 +902,7 @@ namespace Paint.App
                 Fill = Brushes.White,
                 Stroke = Brushes.DeepSkyBlue,
                 StrokeThickness = 1,
-                Tag = position 
+                Tag = position
             };
             Canvas.SetLeft(handle, x);
             Canvas.SetTop(handle, y);
@@ -966,16 +968,16 @@ namespace Paint.App
             }
         }
 
-        // Перерисовка при клике на галочку
+
         private void LayerVisibility_Click(object sender, RoutedEventArgs e)
         {
             Redraw();
         }
 
-        // ПЕРЕМЕЩЕНИЕ ФИГУРЫ В ДРУГОЙ СЛОЙ
+
         private void MoveShapesToLayer_Click(object sender, RoutedEventArgs e)
         {
-            // Берем слой, который ВЫДЕЛЕН в списке ListBox
+
             var targetLayer = LayersListBox.SelectedItem as Layer;
 
             if (targetLayer != null && _selectedShapes.Count > 0)
@@ -990,5 +992,132 @@ namespace Paint.App
             }
         }
 
+
+        private void SaveProject_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Paint Project (*.pnt)|*.pnt|JSON files (*.json)|*.json";
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                   
+                    var settings = new JsonSerializerSettings
+                    {
+                        TypeNameHandling = TypeNameHandling.All,
+                        Formatting = Formatting.Indented
+                    };
+
+                  
+                    string json = JsonConvert.SerializeObject(_layers, settings);
+
+                    File.WriteAllText(saveFileDialog.FileName, json);
+                    MessageBox.Show("Проект успешно сохранен!");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}");
+                }
+            }
+        }
+
+
+        private void LoadProject_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Paint Project (*.pnt)|*.pnt|JSON files (*.json)|*.json";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string json = File.ReadAllText(openFileDialog.FileName);
+
+                    var settings = new JsonSerializerSettings
+                    {
+                        TypeNameHandling = TypeNameHandling.All,
+                       
+                        MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead
+                    };
+
+                   
+                    var loadedLayers = JsonConvert.DeserializeObject<ObservableCollection<Layer>>(json, settings);
+
+                    if (loadedLayers != null)
+                    {
+                        _layers.Clear();
+                        foreach (var layer in loadedLayers)
+                        {
+                            _layers.Add(layer);
+                        }
+
+                       
+                        _undoManager.ClearHistory();
+                        _selectedShapes.Clear();
+
+                      
+                        if (_layers.Count > 0)
+                        {
+                            LayersListBox.SelectedIndex = 0;
+                            _activeLayer = _layers[0];
+                        }
+
+                        Redraw();
+                        MessageBox.Show("Проект успешно загружен!");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при загрузке: {ex.Message}\nВозможно, не все плагины установлены.");
+                }
+            }
+
+        }
+
+        private void LoadPluginFromFile_Click(object sender, RoutedEventArgs e)
+        {
+            // Создаем окно выбора файла
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Динамические библиотеки (*.dll)|*.dll|Все файлы (*.*)|*.*";
+            openFileDialog.Title = "Выберите файл плагина";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Загружаем сборку (assembly) из выбранного пути
+                    Assembly assembly = Assembly.LoadFrom(openFileDialog.FileName);
+
+                    // Ищем все классы, которые реализуют интерфейс IPlugin
+                    var pluginTypes = assembly.GetTypes()
+                        .Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+                    int count = 0;
+                    foreach (var type in pluginTypes)
+                    {
+                        // Создаем экземпляр плагина
+                        IPlugin plugin = (IPlugin)Activator.CreateInstance(type);
+
+                        // Добавляем кнопку на панель (используем твой готовый метод)
+                        AddPluginButton(plugin);
+                        count++;
+                    }
+
+                    if (count > 0)
+                    {
+                        MessageBox.Show($"Успешно загружено плагинов: {count}", "Загрузка завершена", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("В выбранном файле не найдено подходящих плагинов (реализующих IPlugin).", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при загрузке плагина: {ex.Message}", "Критическая ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }
