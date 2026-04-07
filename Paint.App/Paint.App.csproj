@@ -12,9 +12,4 @@
     <ProjectReference Include="..\Paint.Core\Paint.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Commands\" />
-    <Folder Include="Infrastructure\" />
-  </ItemGroup>
-
 </Project>

@@ -1,4 +1,6 @@
-﻿using Paint.App.Models;
+﻿using Paint.App.Commands;
+using Paint.App.Infrastructure;
+using Paint.App.Models;
 using Paint.Core;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -41,6 +43,16 @@ namespace Paint.App
 
 
         private bool _isRotating = false;
+
+
+        private UndoManager _undoManager = new UndoManager();
+
+        private double _thicknessAtStart;
+        private double _thicknessStartValue;
+
+        // Для отслеживания изменений при перемещении/трансформации
+        private List<(IShape shape, List<Point> oldPts, double oldAng)> _transformStartStates = new();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -64,7 +76,7 @@ namespace Paint.App
         //click methods
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            // КОПИРОВАНИЕ (Ctrl+C) - остается без изменений, так как работаем со списком выделения
+           
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
             {
                 if (_selectedShapes.Count > 0)
@@ -77,83 +89,113 @@ namespace Paint.App
                 }
             }
 
-            // ВСТАВКА (Ctrl+V) - МЕНЯЕМ _shapes на _activeLayer.Shapes
+
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.V)
             {
-                if (_clipboardShapes.Count > 0 && _activeLayer != null) // Проверяем наличие активного слоя
+                if (_clipboardShapes.Count > 0 && _activeLayer != null)
                 {
                     _selectedShapes.Clear();
-                    List<IShape> newClonesForClipboard = new List<IShape>();
+                    List<IShape> pastedBatch = new List<IShape>();
 
                     foreach (var shapeToPaste in _clipboardShapes)
                     {
                         IShape pastedShape = shapeToPaste.Clone();
-
                         for (int i = 0; i < pastedShape.Points.Count; i++)
                         {
-                            pastedShape.Points[i] = new Point(
-                                pastedShape.Points[i].X + 15,
-                                pastedShape.Points[i].Y + 15);
+                            pastedShape.Points[i] = new Point(pastedShape.Points[i].X + 15, pastedShape.Points[i].Y + 15);
                         }
-
-                        // ИЗМЕНЕНИЕ ТУТ: Добавляем в активный слой
-                        _activeLayer.Shapes.Add(pastedShape);
-                        _selectedShapes.Add(pastedShape);
-
-                        newClonesForClipboard.Add(pastedShape.Clone());
+                        pastedBatch.Add(pastedShape);
                     }
 
-                    _clipboardShapes = newClonesForClipboard;
+                   
+                    foreach (var s in pastedBatch)
+                    {
+                        _undoManager.Execute(new AddShapeCommand(_activeLayer, s, Redraw));
+                        _selectedShapes.Add(s);
+                    }
+
+                 
+                    _clipboardShapes = pastedBatch.Select(s => s.Clone()).ToList();
                     Redraw();
                 }
             }
 
-            // УДАЛЕНИЕ (Delete или Z) - ИЩЕМ ФИГУРУ ВО ВСЕХ СЛОЯХ
-            if (e.Key == Key.Delete || e.Key == Key.Z)
+
+            if (e.Key == Key.Delete)
             {
                 if (_selectedShapes.Count > 0)
                 {
+                    var shapesToRemove = new List<(Layer, IShape)>();
                     foreach (var shape in _selectedShapes)
                     {
-                        // ИЗМЕНЕНИЕ ТУТ: Проходим по всем слоям, чтобы найти, в каком лежит фигура
                         foreach (var layer in _layers)
                         {
                             if (layer.Shapes.Contains(shape))
                             {
-                                layer.Shapes.Remove(shape);
-                                break; // Нашли и удалили, переходим к следующей выделенной фигуре
+                                shapesToRemove.Add((layer, shape));
+                                break;
                             }
                         }
                     }
+                    
+                    _undoManager.Execute(new RemoveShapeCommand(shapesToRemove, Redraw));
                     _selectedShapes.Clear();
-                    Redraw();
                 }
             }
 
-            // ПЕРЕМЕЩЕНИЕ СТРЕЛКАМИ - остается без изменений
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Z)
+            {
+                _undoManager.Undo();
+               
+                Redraw();
+                return;
+            }
+
+
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Y)
+            {
+                _undoManager.Redo();
+                Redraw();
+                return;
+            }
+
+
             if (_selectedShapes.Count > 0)
             {
                 double step = Keyboard.IsKeyDown(Key.LeftShift) ? 1 : 5;
                 double dx = 0, dy = 0;
 
+                // Определяем направление смещения
                 if (e.Key == Key.Left) dx = -step;
-                if (e.Key == Key.Right) dx = step;
-                if (e.Key == Key.Up) dy = -step;
-                if (e.Key == Key.Down) dy = step;
+                else if (e.Key == Key.Right) dx = step;
+                else if (e.Key == Key.Up) dy = -step;
+                else if (e.Key == Key.Down) dy = step;
 
+                // Если нажата одна из стрелок
                 if (dx != 0 || dy != 0)
                 {
+                   
+                    var changes = new List<(IShape shape, List<Point> oldPts, double oldAng, List<Point> newPts, double newAng)>();
+
                     foreach (var shape in _selectedShapes)
                     {
-                        for (int i = 0; i < shape.Points.Count; i++)
-                        {
-                            shape.Points[i] = new Point(
-                                shape.Points[i].X + dx,
-                                shape.Points[i].Y + dy);
-                        }
+                        
+                        var oldPoints = shape.Points.Select(p => new Point(p.X, p.Y)).ToList();
+                        double oldAngle = shape.Angle;
+
+                        
+                        var newPoints = shape.Points.Select(p => new Point(p.X + dx, p.Y + dy)).ToList();
+                        double newAngle = shape.Angle; 
+
+                       
+                        changes.Add((shape, oldPoints, oldAngle, newPoints, newAngle));
                     }
-                    Redraw();
-                    e.Handled = true;
+
+                   
+                    var moveCommand = new TransformShapeCommand(changes, Redraw);
+                    _undoManager.Execute(moveCommand);
+
+                    e.Handled = true; 
                 }
             }
         }
@@ -216,22 +258,20 @@ namespace Paint.App
 
             btn.Click += (s, e) =>
             {
-                // 1. Устанавливаем выбранный плагин
+                
                 _selectedPlugin = plugin;
 
-                // 2. Выходим из режима выделения
+                
                 _isSelectedMode = false;
-
-                // 3. ОЧИЩАЕМ СПИСОК ВЫДЕЛЕННЫХ ФИГУР
                 _selectedShapes.Clear();
 
-                // 4. Специфическая логика для многоугольника
+               
                 if (plugin.Name == "Многоугольник")
                 {
                     _currentSideCount = CountSideOfPolygon();
                 }
 
-                // 5. Перерисовываем канвас, чтобы убрать рамки выделения
+               
                 Redraw();
             };
 
@@ -258,6 +298,10 @@ namespace Paint.App
                     var hitResult = VisualTreeHelper.HitTest(MainCanvas, mousePos);
                     if (hitResult?.VisualHit is Rectangle handle && handle.Tag is string pos)
                     {
+                        _transformStartStates.Clear();
+                        foreach (var s in _selectedShapes)
+                            _transformStartStates.Add((s, new List<Point>(s.Points), s.Angle));
+
                         if (pos == "ROT")
                         {
                             _isRotating = true;
@@ -291,15 +335,15 @@ namespace Paint.App
                     }
                 }
 
-                // 2. ПОИСК ФИГУРЫ ПОД МЫШЬЮ
+                
                 IShape clickedShape = null;
 
-                // Идем с конца (с верхних слоев к нижним)
+                
                 for (int i = _layers.Count - 1; i >= 0; i--)
                 {
-                    if (!_layers[i].IsVisible) continue; // Пропускаем невидимые слои
+                    if (!_layers[i].IsVisible) continue; 
 
-                    // Внутри слоя тоже идем с конца (верхние фигуры)
+                    
                     for (int j = _layers[i].Shapes.Count - 1; j >= 0; j--)
                     {
                         if (IsPointInShape(mousePos, _layers[i].Shapes[j]))
@@ -332,6 +376,10 @@ namespace Paint.App
                             _selectedShapes.Add(clickedShape);
                         }
                     }
+
+                    _transformStartStates.Clear();
+                    foreach (var s in _selectedShapes)
+                        _transformStartStates.Add((s, new List<Point>(s.Points), s.Angle));
 
                     _isDragging = true;
                     _lastMousePosition = mousePos;
@@ -518,33 +566,51 @@ namespace Paint.App
 
         private void FinishDrawing(MouseButtonEventArgs e)
         {
+            // 1. ЗАПИСЬ ТРАНСФОРМАЦИИ (Перемещение, ресайз, вращение)
+            if (_isDragging || _isRotating || _isResizing)
+            {
+                if (_transformStartStates.Count > 0)
+                {
+                    var changes = new List<(IShape, List<Point>, double, List<Point>, double)>();
+                    foreach (var start in _transformStartStates)
+                    {
+                        // Сравниваем старое состояние из _transformStartStates и текущее в фигуре
+                        changes.Add((start.shape, start.oldPts, start.oldAng, new List<Point>(start.shape.Points), start.shape.Angle));
+                    }
+
+                    // Проверяем, было ли реальное движение, чтобы не плодить пустые команды
+                    bool moved = changes.Any(c => !c.Item2.SequenceEqual(c.Item4) || c.Item3 != c.Item5);
+                    if (moved)
+                    {
+                        _undoManager.Execute(new TransformShapeCommand(changes, Redraw));
+                    }
+                }
+            }
+
+            // 2. ЗАПИСЬ СОЗДАНИЯ НОВОЙ ФИГУРЫ
+            if (e.ChangedButton == MouseButton.Left && _isDrawingActive && _currentShape != null)
+            {
+                if (_selectedPlugin != null && _selectedPlugin.Name != "Ломаная")
+                {
+                    if (_activeLayer != null)
+                    {
+                        // ВМЕСТО: _activeLayer.Shapes.Add(_currentShape);
+                        // ИСПОЛЬЗУЕМ:
+                        _undoManager.Execute(new AddShapeCommand(_activeLayer, _currentShape, Redraw));
+                    }
+
+                    _selectedShapes.Clear();
+                    _selectedShapes.Add(_currentShape);
+                    _currentShape = null;
+                    _isDrawingActive = false;
+                }
+            }
+
             _isDragging = false;
             _isRotating = false;
             _isResizing = false;
             _activeHandle = "";
-
             MainCanvas.ReleaseMouseCapture();
-
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                if (_isDrawingActive && _currentShape != null)
-                {
-                    // Условие: если это не Ломаная (она завершается правой кнопкой)
-                    if (_selectedPlugin != null && _selectedPlugin.Name != "Ломаная")
-                    {
-                        // ИЗМЕНЕНИЕ ТУТ: Добавляем в активный слой вместо общего списка _shapes
-                        if (_activeLayer != null)
-                        {
-                            _activeLayer.Shapes.Add(_currentShape);
-                        }
-
-                        _selectedShapes.Clear();
-                        _selectedShapes.Add(_currentShape);
-                        _currentShape = null;
-                        _isDrawingActive = false;
-                    }
-                }
-            }
             Redraw();
         }
 
@@ -563,7 +629,7 @@ namespace Paint.App
                     // ИЗМЕНЕНИЕ ТУТ: Добавляем готовую ломаную в активный слой
                     if (_activeLayer != null)
                     {
-                        _activeLayer.Shapes.Add(_currentShape);
+                        _undoManager.Execute(new AddShapeCommand(_activeLayer, _currentShape, Redraw));
                     }
                 }
 
@@ -639,16 +705,63 @@ namespace Paint.App
             Redraw();
         }
 
-        private void StrokeColorPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ThicknessSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Если есть выделенные фигуры и выбран элемент в комбобоксе
-            if (_selectedShapes.Count > 0 && StrokeColorPicker.SelectedItem is ComboBoxItem item)
+            // Запоминаем текущее значение ПЕРЕД началом движения
+            _thicknessAtStart = ThicknessSlider.Value;
+        }
+
+     
+
+        private void ThicknessSlider_Start(object sender, MouseButtonEventArgs e)
+        {
+           
+            _thicknessStartValue = ThicknessSlider.Value;
+        }
+
+        private void ThicknessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+           
+            if (_selectedShapes != null && _selectedShapes.Count > 0)
             {
                 foreach (var shape in _selectedShapes)
                 {
-                    shape.StrokeColor = (Brush)item.Tag;
+                    shape.StrokeThickness = ThicknessSlider.Value;
                 }
                 Redraw();
+            }
+        }
+
+        private void ThicknessSlider_End(object sender, MouseButtonEventArgs e)
+        {
+           
+            if (_selectedShapes != null && _selectedShapes.Count > 0)
+            {
+                double newValue = ThicknessSlider.Value;
+
+                
+                foreach (var s in _selectedShapes) s.StrokeThickness = _thicknessStartValue;
+
+               
+                var cmd = new ChangeThicknessCommand(new List<IShape>(_selectedShapes), newValue, Redraw);
+                _undoManager.Execute(cmd);
+            }
+        }
+
+
+        private void StrokeColorPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            
+            if (_selectedShapes.Count > 0 && StrokeColorPicker.SelectedItem is ComboBoxItem item)
+            {
+                Brush newBrush = (Brush)item.Tag;
+
+               
+                _undoManager.Execute(new ChangeColorCommand(
+                    new List<IShape>(_selectedShapes), 
+                    newBrush,
+                    true, 
+                    Redraw));
             }
             this.Focus();
         }
@@ -657,11 +770,14 @@ namespace Paint.App
         {
             if (_selectedShapes.Count > 0 && FillColorPicker.SelectedItem is ComboBoxItem item)
             {
-                foreach (var shape in _selectedShapes)
-                {
-                    shape.FillColor = (Brush)item.Tag;
-                }
-                Redraw();
+                Brush newBrush = (Brush)item.Tag;
+
+               
+                _undoManager.Execute(new ChangeColorCommand(
+                    new List<IShape>(_selectedShapes),
+                    newBrush,
+                    false,
+                    Redraw));
             }
 
             this.Focus();
@@ -770,19 +886,7 @@ namespace Paint.App
             MainCanvas.Children.Add(connector);
         }
 
-        private void ThicknessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_selectedShapes != null && _selectedShapes.Count > 0)
-            {
-                foreach (var shape in _selectedShapes)
-                {
-                    shape.StrokeThickness = ThicknessSlider.Value;
-                }
-                Redraw();
-            }
-
-            this.Focus();
-        }
+       
 
 
         //
@@ -808,27 +912,26 @@ namespace Paint.App
 
         private void AddLayer_Click(object sender, RoutedEventArgs e)
         {
-            
             _totalLayersCreated++;
-
-           
             var newLayer = new Layer { Name = $"Слой {_totalLayersCreated}" };
 
-            _layers.Add(newLayer);
+            // Используем команду
+            _undoManager.Execute(new LayerCollectionCommand(_layers, newLayer, true, Redraw));
 
-           
             LayersListBox.SelectedItem = newLayer;
         }
 
         // Удалить слой
         private void RemoveLayer_Click(object sender, RoutedEventArgs e)
         {
+            // Не даем удалить последний слой
             if (_layers.Count > 1 && LayersListBox.SelectedItem is Layer selected)
             {
-                _layers.Remove(selected);
+                _undoManager.Execute(new LayerCollectionCommand(_layers, selected, false, Redraw));
+
+                // Автоматически выбираем последний оставшийся слой
                 _activeLayer = _layers.Last();
                 LayersListBox.SelectedItem = _activeLayer;
-                Redraw();
             }
         }
 
@@ -836,10 +939,10 @@ namespace Paint.App
         private void MoveLayerUp_Click(object sender, RoutedEventArgs e)
         {
             int index = LayersListBox.SelectedIndex;
-            if (index < _layers.Count - 1 && index >= 0)
+            if (index >= 0 && index < _layers.Count - 1)
             {
-                _layers.Move(index, index + 1);
-                Redraw();
+                _undoManager.Execute(new MoveLayerOrderCommand(_layers, index, index + 1, Redraw));
+                LayersListBox.SelectedIndex = index + 1; // Сохраняем выделение
             }
         }
 
@@ -849,8 +952,8 @@ namespace Paint.App
             int index = LayersListBox.SelectedIndex;
             if (index > 0)
             {
-                _layers.Move(index, index - 1);
-                Redraw();
+                _undoManager.Execute(new MoveLayerOrderCommand(_layers, index, index - 1, Redraw));
+                LayersListBox.SelectedIndex = index - 1; // Сохраняем выделение
             }
         }
 
@@ -872,23 +975,19 @@ namespace Paint.App
         // ПЕРЕМЕЩЕНИЕ ФИГУРЫ В ДРУГОЙ СЛОЙ
         private void MoveShapesToLayer_Click(object sender, RoutedEventArgs e)
         {
-            if (_activeLayer == null || _selectedShapes.Count == 0) return;
+            // Берем слой, который ВЫДЕЛЕН в списке ListBox
+            var targetLayer = LayersListBox.SelectedItem as Layer;
 
-            foreach (var shape in _selectedShapes.ToList())
+            if (targetLayer != null && _selectedShapes.Count > 0)
             {
-                // 1. Удаляем фигуру из того слоя, где она была
-                foreach (var layer in _layers)
-                {
-                    if (layer.Shapes.Contains(shape))
-                    {
-                        layer.Shapes.Remove(shape);
-                        break;
-                    }
-                }
-                // 2. Добавляем в текущий выбранный слой
-                _activeLayer.Shapes.Add(shape);
+                // Передаем все слои (_layers), чтобы команда нашла, где лежат фигуры
+                var cmd = new TransferShapesCommand(new List<IShape>(_selectedShapes), targetLayer, _layers, Redraw);
+                _undoManager.Execute(cmd);
+
+                // Сбрасываем выделение, чтобы не было ошибок
+                _selectedShapes.Clear();
+                Redraw();
             }
-            Redraw();
         }
 
     }
