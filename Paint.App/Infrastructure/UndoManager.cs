@@ -9,17 +9,17 @@ namespace Paint.App.Infrastructure
     public class UndoManager
     {
        
-        private readonly Stack<Paint.Core.ICommand> _undoStack = new Stack<Paint.Core.ICommand>();
+        private readonly Stack<Paint.Core.ICommand> _undoStack = new Stack<Paint.Core.ICommand>(); // ВЫПОЛНЕННЫЙ КОМАНДЫ
 
         
-        private readonly Stack<Paint.Core.ICommand> _redoStack = new Stack<Paint.Core.ICommand>();
+        private readonly Stack<Paint.Core.ICommand> _redoStack = new Stack<Paint.Core.ICommand>(); //ОТМЕНЕНННЫЕ КОМАНДЫ
 
         
         public bool CanUndo => _undoStack.Count > 0;
         public bool CanRedo => _redoStack.Count > 0;
 
         
-        public void Execute(Paint.Core.ICommand command)
+        public void Execute(Paint.Core.ICommand command) // выполнение какого-то действия (удаляем redostack, потому что создаем новое действие и если мы перед этим что-то отменили,а потом создали то эти отмененные действия стираются)) 
         {
            
             command.Execute();
@@ -32,7 +32,7 @@ namespace Paint.App.Infrastructure
         }
 
        
-        public void Undo()
+        public void Undo() // отменяем действие возвращаем все как было 
         {
             if (_undoStack.Count > 0)
             {
@@ -48,7 +48,7 @@ namespace Paint.App.Infrastructure
         }
 
         
-        public void Redo()
+        public void Redo() //идем вперед 
         {
             if (_redoStack.Count > 0)
             {
@@ -63,7 +63,7 @@ namespace Paint.App.Infrastructure
             }
         }
 
-        // Очистка истории (полезно при создании нового файла/очистке холста)
+       
         public void ClearHistory()
         {
             _undoStack.Clear();

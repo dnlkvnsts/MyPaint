@@ -21,7 +21,7 @@ namespace Paint.App.Commands
         _targetLayer = target;
         _redraw = redraw;
 
-        // Находим настоящий "дом" для каждой фигуры
+      
         foreach (var s in _shapes)
         {
             foreach (var layer in allLayers)

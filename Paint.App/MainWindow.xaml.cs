@@ -166,13 +166,13 @@ namespace Paint.App
                 double step = Keyboard.IsKeyDown(Key.LeftShift) ? 1 : 5;
                 double dx = 0, dy = 0;
 
-                // Определяем направление смещения
+               
                 if (e.Key == Key.Left) dx = -step;
                 else if (e.Key == Key.Right) dx = step;
                 else if (e.Key == Key.Up) dy = -step;
                 else if (e.Key == Key.Down) dy = step;
 
-                // Если нажата одна из стрелок
+                
                 if (dx != 0 || dy != 0)
                 {
 
@@ -388,9 +388,7 @@ namespace Paint.App
                 }
                 else
                 {
-                    // 3. ВЫДЕЛЕНИЕ РАМКОЙ
-
-                    // Если кликнули в пустоту без Shift — снимаем всё выделение
+                  
                     if (!isShiftPressed) _selectedShapes.Clear();
 
                 }
@@ -401,25 +399,25 @@ namespace Paint.App
 
             if (_selectedPlugin == null) return;
 
-            // --- НОВОЕ: Обработка Ломаной ---
+           
             if (_selectedPlugin.Name == "Ломаная")
             {
                 if (!_isDrawingActive)
                 {
-                    // Начинаем новую ломаную
+                   
                     _isDrawingActive = true;
                     _currentShape = _selectedPlugin.CreateInstance();
-                    ApplyCurrentSettings(_currentShape); // Применяем цвет/толщину
+                    ApplyCurrentSettings(_currentShape);
                     _currentShape.Points = new List<Point> { mousePos, mousePos };
                 }
                 else
                 {
-                    // Добавляем следующую точку в существующую ломаную
+                   
                     _currentShape.Points.Add(mousePos);
                 }
-                // Мы НЕ вызываем CaptureMouse для ломаной, чтобы MouseUp не прерывал процесс
+               
             }
-            // --- Обычные фигуры (Прямоугольник, Эллипс и т.д.) ---
+          
             else
             {
                 _isDrawingActive = true;
@@ -452,11 +450,10 @@ namespace Paint.App
         {
             Point currentPos = e.GetPosition(MainCanvas);
 
-            // 1. ВРАЩЕНИЕ ГРУППЫ
+           
             if (_isRotating && _selectedShapes.Count > 0)
             {
-                // Берем последнюю выбранную фигуру как эталон для центра вращения 
-                // или вычисляем общий центр (здесь для простоты - по последней)
+               
                 var primary = _selectedShapes.Last();
                 double minX = primary.Points.Min(p => p.X);
                 double maxX = primary.Points.Max(p => p.X);
@@ -476,7 +473,7 @@ namespace Paint.App
                 return;
             }
 
-            // 2. ИЗМЕНЕНИЕ РАЗМЕРА ГРУППЫ
+            
             else if (_isResizing && _selectedShapes.Count > 0)
             {
                 double oldDx = _lastMousePosition.X - _resizeAnchor.X;
@@ -492,7 +489,7 @@ namespace Paint.App
 
                 foreach (var shape in _selectedShapes)
                 {
-                    // Если это правильный многоугольник (2 точки: центр и радиус), используем унифицированное масштабирование
+                    
                     if (shape.GetType().Name.Contains("Polygon") && shape.Points.Count == 2)
                     {
                         double uniformScale = (_activeHandle.Length > 1)
@@ -523,7 +520,7 @@ namespace Paint.App
                 Redraw();
             }
 
-            // 3. ПЕРЕМЕЩЕНИЕ ГРУППЫ
+          
             else if (_isDragging && _selectedShapes.Count > 0)
             {
                 double dx = currentPos.X - _lastMousePosition.X;
@@ -543,7 +540,7 @@ namespace Paint.App
                 Redraw();
             }
 
-            // 5. РИСОВАНИЕ НОВОЙ ФИГУРЫ
+          
             else if (_isDrawingActive && _currentShape != null)
             {
                 int lastIndex = _currentShape.Points.Count - 1;
@@ -567,7 +564,7 @@ namespace Paint.App
 
         private void FinishDrawing(MouseButtonEventArgs e)
         {
-            // 1. ЗАПИСЬ ТРАНСФОРМАЦИИ (Перемещение, ресайз, вращение)
+          
             if (_isDragging || _isRotating || _isResizing)
             {
                 if (_transformStartStates.Count > 0)
@@ -575,11 +572,11 @@ namespace Paint.App
                     var changes = new List<(IShape, List<Point>, double, List<Point>, double)>();
                     foreach (var start in _transformStartStates)
                     {
-                        // Сравниваем старое состояние из _transformStartStates и текущее в фигуре
+                        
                         changes.Add((start.shape, start.oldPts, start.oldAng, new List<Point>(start.shape.Points), start.shape.Angle));
                     }
 
-                    // Проверяем, было ли реальное движение, чтобы не плодить пустые команды
+                  
                     bool moved = changes.Any(c => !c.Item2.SequenceEqual(c.Item4) || c.Item3 != c.Item5);
                     if (moved)
                     {
@@ -588,15 +585,14 @@ namespace Paint.App
                 }
             }
 
-            // 2. ЗАПИСЬ СОЗДАНИЯ НОВОЙ ФИГУРЫ
+          
             if (e.ChangedButton == MouseButton.Left && _isDrawingActive && _currentShape != null)
             {
                 if (_selectedPlugin != null && _selectedPlugin.Name != "Ломаная")
                 {
                     if (_activeLayer != null)
                     {
-                        // ВМЕСТО: _activeLayer.Shapes.Add(_currentShape);
-                        // ИСПОЛЬЗУЕМ:
+                        
                         _undoManager.Execute(new AddShapeCommand(_activeLayer, _currentShape, Redraw));
                     }
 
@@ -624,10 +620,10 @@ namespace Paint.App
 
             if (isPolyline && _isDrawingActive && _currentShape != null)
             {
-                // Проверяем, что в ломаной хотя бы 2 точки
+               
                 if (_currentShape.Points.Count >= 2)
                 {
-                    // ИЗМЕНЕНИЕ ТУТ: Добавляем готовую ломаную в активный слой
+                    
                     if (_activeLayer != null)
                     {
                         _undoManager.Execute(new AddShapeCommand(_activeLayer, _currentShape, Redraw));
@@ -702,13 +698,13 @@ namespace Paint.App
         {
             _isSelectedMode = true;
             _selectedPlugin = null;
-            _selectedShapes.Clear(); // Очищаем весь список выделенных фигур
+            _selectedShapes.Clear(); 
             Redraw();
         }
 
         private void ThicknessSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Запоминаем текущее значение ПЕРЕД началом движения
+            
             _thicknessAtStart = ThicknessSlider.Value;
         }
 
@@ -1072,7 +1068,7 @@ namespace Paint.App
             }
 
         }
-
+        //
         private void LoadPluginFromFile_Click(object sender, RoutedEventArgs e)
         {
            
