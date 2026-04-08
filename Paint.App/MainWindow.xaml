@@ -27,8 +27,8 @@
             Background="#FFD700" 
             FontWeight="Bold"/>
         </StackPanel>
+      
         
-        <!-- ЛЕВАЯ ПАНЕЛЬ (ИНСТРУМЕНТЫ) -->
         <StackPanel DockPanel.Dock="Left" Width="150" Background="#F5F5F5" >
             <TextBlock Text="Цвет обводки:" Margin="0,5,0,2"/>
             <ComboBox x:Name="StrokeColorPicker" SelectedIndex="0" SelectionChanged="StrokeColorPicker_SelectionChanged" >
@@ -72,7 +72,7 @@
             <Button Content="Курсор (Выбор)" Click="SelectMode_Click" Margin="0,20,0,5" Padding="5"/>
         </StackPanel>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ (СЛОИ) -->
+       
         <StackPanel DockPanel.Dock="Right" Width="180" Background="#F5F5F5" >
             <TextBlock Text="СЛОИ" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,5"/>
 
@@ -98,7 +98,7 @@
                 Margin="0,5" Padding="5" FontSize="10" ToolTip="Переместить выбранные фигуры в выделенный слой"/>
         </StackPanel>
 
-        <!-- ЦЕНТРАЛЬНАЯ ЧАСТЬ (ХОЛСТ) -->
+       
         <Canvas x:Name="MainCanvas" 
             Background="White"
             ClipToBounds="True" 

@@ -1,0 +1,106 @@
+{
+  "$type": "System.Collections.ObjectModel.ObservableCollection`1[[Paint.App.Models.Layer, Paint.App]], System.ObjectModel",
+  "$values": [
+    {
+      "$type": "Paint.App.Models.Layer, Paint.App",
+      "Name": "Слой 2",
+      "IsVisible": true,
+      "Shapes": {
+        "$type": "System.Collections.Generic.List`1[[Paint.Core.IShape, Paint.Core]], System.Private.CoreLib",
+        "$values": [
+          {
+            "$type": "PolylinePlugin.PolylineShape, PolylinePlugin",
+            "Points": {
+              "$type": "System.Collections.Generic.List`1[[System.Windows.Point, WindowsBase]], System.Private.CoreLib",
+              "$values": [
+                "816,104.03999999999999",
+                "1150.5,482.53999999999996",
+                "1298.5,216.03999999999996",
+                "1450,648.04",
+                "1100.5,71.03999999999999",
+                "1099,77.53999999999999"
+              ]
+            },
+            "StrokeColor": "#FFFFA500",
+            "StrokeThickness": 20.0,
+            "FillColor": "#FFFFFF00",
+            "Angle": 0.0,
+            "IsSelected": false,
+            "OrderIndex": 0
+          },
+          {
+            "$type": "PolygonPlugin.PolygonShape, PolygonPlugin",
+            "Points": {
+              "$type": "System.Collections.Generic.List`1[[System.Windows.Point, WindowsBase]], System.Private.CoreLib",
+              "$values": [
+                "827,201.54",
+                "794.5,292.53999999999996"
+              ]
+            },
+            "StrokeColor": "#FFFFA500",
+            "StrokeThickness": 8.08273381294964,
+            "FillColor": "#FFFFFF00",
+            "Angle": 0.0,
+            "IsSelected": false,
+            "OrderIndex": 0,
+            "SideCount": 8
+          }
+        ]
+      }
+    },
+    {
+      "$type": "Paint.App.Models.Layer, Paint.App",
+      "Name": "Слой 1",
+      "IsVisible": true,
+      "Shapes": {
+        "$type": "System.Collections.Generic.List`1[[Paint.Core.IShape, Paint.Core]], System.Private.CoreLib",
+        "$values": [
+          {
+            "$type": "RectanglePlugin.RectangleShape, RectanglePlugin",
+            "Points": {
+              "$type": "System.Collections.Generic.List`1[[System.Windows.Point, WindowsBase]], System.Private.CoreLib",
+              "$values": [
+                "81.5,71.03999999999999",
+                "566.1508525529625,222.78691358024702"
+              ]
+            },
+            "StrokeColor": "#FFFFA500",
+            "StrokeThickness": 8.08273381294964,
+            "FillColor": "#FFFFFF00",
+            "Angle": 1.1726229176732232,
+            "IsSelected": false,
+            "OrderIndex": 0
+          },
+          {
+            "$type": "PolylinePlugin.PolylineShape, PolylinePlugin",
+            "Points": {
+              "$type": "System.Collections.Generic.List`1[[System.Windows.Point, WindowsBase]], System.Private.CoreLib",
+              "$values": [
+                "765.5,287.03999999999996",
+                "1100,532.54",
+                "1058.5,343.03999999999996",
+                "874,535.04",
+                "874,535.04"
+              ]
+            },
+            "StrokeColor": "#FFFFA500",
+            "StrokeThickness": 8.08273381294964,
+            "FillColor": "#FFFFFF00",
+            "Angle": 0.0,
+            "IsSelected": false,
+            "OrderIndex": 0
+          }
+        ]
+      }
+    },
+    {
+      "$type": "Paint.App.Models.Layer, Paint.App",
+      "Name": "Слой 3",
+      "IsVisible": true,
+      "Shapes": {
+        "$type": "System.Collections.Generic.List`1[[Paint.Core.IShape, Paint.Core]], System.Private.CoreLib",
+        "$values": []
+      }
+    }
+  ]
+}

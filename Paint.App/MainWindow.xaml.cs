@@ -52,7 +52,6 @@ namespace Paint.App
         private double _thicknessAtStart;
         private double _thicknessStartValue;
 
-        // Для отслеживания изменений при перемещении/трансформации
         private List<(IShape shape, List<Point> oldPts, double oldAng)> _transformStartStates = new();
 
         public MainWindow()
@@ -917,49 +916,48 @@ namespace Paint.App
             _totalLayersCreated++;
             var newLayer = new Layer { Name = $"Слой {_totalLayersCreated}" };
 
-            // Используем команду
+           
             _undoManager.Execute(new LayerCollectionCommand(_layers, newLayer, true, Redraw));
 
             LayersListBox.SelectedItem = newLayer;
         }
 
-        // Удалить слой
         private void RemoveLayer_Click(object sender, RoutedEventArgs e)
         {
-            // Не даем удалить последний слой
+            
             if (_layers.Count > 1 && LayersListBox.SelectedItem is Layer selected)
             {
                 _undoManager.Execute(new LayerCollectionCommand(_layers, selected, false, Redraw));
 
-                // Автоматически выбираем последний оставшийся слой
+               
                 _activeLayer = _layers.Last();
                 LayersListBox.SelectedItem = _activeLayer;
             }
         }
 
-        // Поднять слой выше (в списке и по Z-порядку)
+        
         private void MoveLayerUp_Click(object sender, RoutedEventArgs e)
         {
             int index = LayersListBox.SelectedIndex;
             if (index >= 0 && index < _layers.Count - 1)
             {
                 _undoManager.Execute(new MoveLayerOrderCommand(_layers, index, index + 1, Redraw));
-                LayersListBox.SelectedIndex = index + 1; // Сохраняем выделение
+                LayersListBox.SelectedIndex = index + 1; 
             }
         }
 
-        // Опустить слой ниже
+       
         private void MoveLayerDown_Click(object sender, RoutedEventArgs e)
         {
             int index = LayersListBox.SelectedIndex;
             if (index > 0)
             {
                 _undoManager.Execute(new MoveLayerOrderCommand(_layers, index, index - 1, Redraw));
-                LayersListBox.SelectedIndex = index - 1; // Сохраняем выделение
+                LayersListBox.SelectedIndex = index - 1; 
             }
         }
 
-        // Когда выбираем слой в списке — он становится активным для рисования
+        
         private void LayersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LayersListBox.SelectedItem is Layer selected)
@@ -982,17 +980,17 @@ namespace Paint.App
 
             if (targetLayer != null && _selectedShapes.Count > 0)
             {
-                // Передаем все слои (_layers), чтобы команда нашла, где лежат фигуры
+               
                 var cmd = new TransferShapesCommand(new List<IShape>(_selectedShapes), targetLayer, _layers, Redraw);
                 _undoManager.Execute(cmd);
 
-                // Сбрасываем выделение, чтобы не было ошибок
+                
                 _selectedShapes.Clear();
                 Redraw();
             }
         }
 
-
+        //serialisation
         private void SaveProject_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
@@ -1022,7 +1020,7 @@ namespace Paint.App
             }
         }
 
-
+        //deserialisation
         private void LoadProject_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -1077,7 +1075,7 @@ namespace Paint.App
 
         private void LoadPluginFromFile_Click(object sender, RoutedEventArgs e)
         {
-            // Создаем окно выбора файла
+           
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Динамические библиотеки (*.dll)|*.dll|Все файлы (*.*)|*.*";
             openFileDialog.Title = "Выберите файл плагина";
@@ -1086,20 +1084,20 @@ namespace Paint.App
             {
                 try
                 {
-                    // Загружаем сборку (assembly) из выбранного пути
+                    
                     Assembly assembly = Assembly.LoadFrom(openFileDialog.FileName);
 
-                    // Ищем все классы, которые реализуют интерфейс IPlugin
+                   
                     var pluginTypes = assembly.GetTypes()
                         .Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
                     int count = 0;
                     foreach (var type in pluginTypes)
                     {
-                        // Создаем экземпляр плагина
+                       
                         IPlugin plugin = (IPlugin)Activator.CreateInstance(type);
 
-                        // Добавляем кнопку на панель (используем твой готовый метод)
+                       
                         AddPluginButton(plugin);
                         count++;
                     }
